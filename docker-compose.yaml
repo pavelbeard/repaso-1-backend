@@ -1,0 +1,13 @@
+services:
+  test-database:
+    image: mongo:latest
+    container_name: test-database
+    ports:
+      - '27117:27017'
+    volumes:
+      - test-database-data:/data/db
+
+volumes:
+  test-database-data:
+    driver: local
+    name: test-database-data
