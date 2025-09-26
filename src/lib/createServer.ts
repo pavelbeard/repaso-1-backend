@@ -7,17 +7,15 @@ import { notFound } from './db/utils/notFound.ts'
 export const createServer = () => {
   const app = express()
 
-  app.disable('x-powered-by')
-
-  app.use(logger)
-  app.use(express.json())
-
-  // All Routes!
-  app.use(apiRouter)
-
-  // Error handling middleware
-  app.use(errorFallback)
-  app.use(notFound)
+  app
+    .disable('x-powered-by')
+    .use(logger)
+    .use(express.json())
+    // All Routes!
+    .use(apiRouter)
+    // Error handling middleware
+    .use(errorFallback)
+    .use(notFound)
 
   return app
 }
