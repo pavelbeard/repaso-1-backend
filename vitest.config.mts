@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config'
 
 const folders = {
   unit: ['./src/**/*.test.ts'],
-  int: ['./test/**/*.test.ts'],
+  int: ['./tests/**/*.test.ts'],
   nodeModules: ['./node_modules/**'],
 }
 
@@ -20,6 +20,22 @@ export default defineConfig({
           alias: {
             lib: './src/lib',
           },
+        },
+      },
+      {
+        extends: true,
+        test: {
+          globals: true,
+          environment: 'node',
+          setupFiles: ['./tests/helpers/setup.ts'],
+          name: { label: 'int', color: 'blue' },
+          include: folders.int,
+          exclude: folders.unit.concat(folders.nodeModules),
+          env: { ...process.env },
+          alias: {
+            lib: './src/lib',
+          },
+          isolate: true,
         },
       },
     ],

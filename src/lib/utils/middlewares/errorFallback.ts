@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express'
+import morgan from 'morgan'
 import { AppError } from '../appError.ts'
 
 export const errorFallback = (
@@ -8,9 +9,7 @@ export const errorFallback = (
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _: NextFunction
 ) => {
-  console.error(err.name)
-
-  console.log(res)
+  morgan(err.name)
 
   res.status('statusCode' in err ? (err.statusCode as number) : 500).json({
     message: err instanceof AppError ? err.message : 'Internal Server Error',

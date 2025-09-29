@@ -28,10 +28,12 @@ export class AuthController {
       return next(new AppError('UNAUTHORIZED', 'Invalid credentials'))
     }
 
-    // 3. Generate JWT or session
-    const token = jwt.sign({ id: user.id }, JWT_SECRET)
+    const userData = { id: user.id, email: user.email, username: user.username }
 
-    res.status(200).json({ token })
+    // 3. Generate JWT or session
+    const token = jwt.sign(userData, JWT_SECRET)
+
+    res.status(200).json({ token, user: userData })
   }
 
   static async register(

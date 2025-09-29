@@ -205,6 +205,7 @@ describe('Auth Controller', () => {
 
       vi.mocked(findUserByIdOrUsernameOrEmailQuery).mockResolvedValue({
         id: 'user-id-123',
+        username: 'existinguser',
         email: 'existinguser@example.com',
         password: hashedPassword,
       } as unknown as Awaited<ReturnType<typeof findUserByIdOrUsernameOrEmailQuery>>)
@@ -213,6 +214,11 @@ describe('Auth Controller', () => {
 
       expect(response.json).toHaveBeenCalledWith({
         token: expect.any(String),
+        user: {
+          id: 'user-id-123',
+          email: 'existinguser@example.com',
+          username: 'existinguser',
+        },
       })
 
       expect(next).not.toHaveBeenCalled()

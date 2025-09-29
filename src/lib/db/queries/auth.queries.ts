@@ -22,9 +22,7 @@ export const findUserByIdOrUsernameOrEmailQuery = async ({
   email?: string
 }) => {
   return await User.findOne({
-    where: {
-      $or: [{ id }, { username }, { email }],
-    },
+    $or: [{ _id: id }, { username }, { email }],
   })
 }
 
