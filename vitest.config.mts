@@ -17,6 +17,9 @@ export default defineConfig({
           include: folders.unit,
           exclude: folders.int.concat(folders.nodeModules),
           env: { ...process.env },
+          alias: {
+            lib: './src/lib',
+          },
         },
       },
     ],

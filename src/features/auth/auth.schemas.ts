@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+// VALIDATION SCHEMAS FOR AUTH FEATURE
 /** GENERIC AUTH SCHEMAS */
 
 const userSchema = z.object({
@@ -20,43 +21,46 @@ const userSchema = z.object({
 })
 
 /** CREATE as REGISTER */
-export const createUserSchema = userSchema
-  .omit({ id: true, createdAt: true, updatedAt: true })
-  .extend({
-    confirmPassword: z.string().min(8).max(100),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  })
+export const createUserSchema = z.object({
+  body: userSchema
+    .omit({ id: true, createdAt: true, updatedAt: true })
+    .extend({
+      confirmPassword: z.string().min(8).max(100),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords don't match",
+      path: ['confirmPassword'],
+    }),
+})
 
 /** READ */
-export const readUserSchema = userSchema.pick({
-  id: true,
-  username: true,
-  email: true,
-  createdAt: true,
-  updatedAt: true,
+export const readUserSchema = z.object({
+  params: userSchema.pick({
+    id: true,
+    username: true,
+    email: true,
+  }),
 })
 
 /** UPDATE */
-export const updateUserSchema = userSchema
-  .partial()
-  .omit({ id: true, createdAt: true, updatedAt: true })
+export const updateUserSchema = z.object({
+  params: userSchema.pick({ id: true }),
+  body: userSchema
+    .partial()
+    .omit({ id: true, createdAt: true, updatedAt: true }),
+})
 
 /** DELETE */
 export const deleteUserSchema = z.object({
-  id: z.uuid(),
+  params: userSchema.pick({ id: true }),
 })
 
 /** LOGIN */
 export const loginSchema = z.object({
-  username: z
-    .string()
-    .min(3)
-    .max(30)
-    .regex(/^[a-zA-Z0-9_]+$/),
-  password: z.string().min(8).max(100),
+  body: z.object({
+    email: userSchema.shape.email,
+    password: userSchema.shape.password,
+  }),
 })
 
 /** EXPORT TYPES */
