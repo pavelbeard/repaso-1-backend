@@ -1,13 +1,12 @@
 import bcrypt from 'bcrypt'
 import type { NextFunction, Response } from 'express'
-import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '../../lib/constants'
 import {
   createUserQuery,
   findUserByIdOrUsernameOrEmailQuery,
 } from '../../lib/db/queries/auth.queries'
 import { AppError } from '../../lib/utils/appError'
 import { UserLoginRequest, UserRegisterRequest } from './auth.types'
+import { generateTokens } from './auth.utils'
 
 export class AuthController {
   static async login(req: UserLoginRequest, res: Response, next: NextFunction) {
@@ -31,9 +30,9 @@ export class AuthController {
     const userData = { id: user.id, email: user.email, username: user.username }
 
     // 3. Generate JWT or session
-    const token = jwt.sign(userData, JWT_SECRET)
+    const [accessToken, refreshToken] = generateTokens(userData)
 
-    res.status(200).json({ token, user: userData })
+    res.status(200).json({ accessToken, refreshToken, user: userData })
   }
 
   static async register(

@@ -3,21 +3,16 @@ import { schemaValidationMiddleware } from '../../lib/utils/middlewares/schemaVa
 import { AuthController } from './auth.controller.ts'
 import { createUserSchema, loginSchema } from './auth.schemas.ts'
 
-const router = Router()
-const authRouter = Router()
+export const authRouter = Router()
 
-router.post(
+authRouter.post(
   '/login',
   schemaValidationMiddleware(loginSchema),
   AuthController.login
 )
 
-router.post(
+authRouter.post(
   '/register',
   schemaValidationMiddleware(createUserSchema),
   AuthController.register
 )
-
-authRouter.use('/auth', router)
-
-export { authRouter }

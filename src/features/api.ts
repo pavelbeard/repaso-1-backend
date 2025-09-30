@@ -5,6 +5,7 @@ import { healthRouter } from './health.ts'
 
 export const apiRouter = Router()
 
-apiRouter.use(API_PREFIX, [authRouter, healthRouter])
+apiRouter.use(String(API_PREFIX).concat('/auth'), authRouter)
+apiRouter.use(String(API_PREFIX).concat('/health'), healthRouter)
 
 export default apiRouter
