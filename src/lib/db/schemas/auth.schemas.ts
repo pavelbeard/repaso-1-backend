@@ -18,3 +18,16 @@ export const UserSchema = new Schema<IUser>(
   },
   { timestamps: true }
 )
+
+export interface IRefreshTokenBlacklist {
+  token: string
+  createdAt: Date
+}
+
+export const RefreshTokenBlacklistSchema = new Schema<IRefreshTokenBlacklist>(
+  {
+    token: { type: String, required: true, unique: true },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true }
+)

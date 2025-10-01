@@ -1,7 +1,22 @@
 import type { Request, Response } from 'express'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AppError } from '../appError'
-import { verifyTokenMiddleware } from './verifyToken'
+import { verifyToken } from './verifyTokenMiddleware'
+
+vi.mock('jsonwebtoken', () => {
+  return {
+    default: {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      verify: vi.fn((token: string, secret: string = 'secret') => {
+        if (token === 'valid-token') {
+          return { userId: '12345' }
+        } else {
+          throw new Error('Invalid token')
+        }
+      }),
+    },
+  }
+})
 
 describe('Token verification', () => {
   let request: Request
@@ -32,7 +47,7 @@ describe('Token verification', () => {
       },
     } as unknown as Request
 
-    await verifyTokenMiddleware(request, response, next)
+    await verifyToken(request, response, next)
 
     expect(next).toHaveBeenCalledWith(
       new AppError('UNAUTHORIZED', 'Invalid token')
@@ -46,7 +61,7 @@ describe('Token verification', () => {
       },
     } as unknown as Request
 
-    await verifyTokenMiddleware(request, response, next)
+    await verifyToken(request, response, next)
 
     expect(next).toHaveBeenCalledWith(
       new AppError('UNAUTHORIZED', 'No token provided')
@@ -58,7 +73,7 @@ describe('Token verification', () => {
       headers: {},
     } as unknown as Request
 
-    await verifyTokenMiddleware(request, response, next)
+    await verifyToken(request, response, next)
 
     expect(next).toHaveBeenCalledWith(
       new AppError('UNAUTHORIZED', 'No token provided')
@@ -73,8 +88,14 @@ describe('Token verification', () => {
       },
     } as unknown as Request
 
-    await verifyTokenMiddleware(request, response, next)
+    await verifyToken(request, response, next)
 
-    expect(next).not.toHaveBeenCalled()
+    expect(next).not.toHaveBeenCalledWith(
+      new AppError('UNAUTHORIZED', 'Invalid token')
+    )
+    expect(next).not.toHaveBeenCalledWith(
+      new AppError('UNAUTHORIZED', 'No token provided')
+    )
+    expect(request.session?.user).toEqual({ userId: '12345' })
   })
 })

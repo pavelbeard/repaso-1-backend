@@ -4,5 +4,6 @@ declare namespace NodeJS {
     MONGODB_URL: string
     JWT_SECRET_ACCESS: string
     JWT_SECRET_REFRESH: string
+    JWT_SAVE_TO_COOKIE: 'true' | 'false'
   }
 }

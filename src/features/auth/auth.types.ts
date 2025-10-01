@@ -8,3 +8,9 @@ export type UserRegisterRequest = Request<
   unknown,
   CreateUserInput['body']
 >
+
+export type JWTPayload = {
+  id: string
+  email: string
+  username: string
+}

@@ -1,18 +1,32 @@
 import bcrypt from 'bcrypt'
-import type { Response } from 'express'
+import type { Request, Response } from 'express'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createUserQuery,
   findUserByIdOrUsernameOrEmailQuery,
+  isRefreshTokenBlacklistedQuery,
 } from '../../lib/db/queries/auth.queries'
 import { AppError } from '../../lib/utils/appError'
 import { AuthController } from './auth.controller'
 import { UserRegisterRequest } from './auth.types'
+import { verifyRefreshToken } from './auth.utils'
 
 vi.mock('../../lib/db/queries/auth.queries', () => ({
   createUserQuery: vi.fn(),
   findUserByIdOrUsernameOrEmailQuery: vi.fn(),
+  isRefreshTokenBlacklistedQuery: vi.fn(),
+  blacklistRefreshTokenQuery: vi.fn(),
 }))
+
+vi.mock('./auth.utils', async () => {
+  const actual = await vi.importActual<typeof import('./auth.utils')>(
+    './auth.utils'
+  )
+  return {
+    ...actual,
+    verifyRefreshToken: vi.fn(),
+  }
+})
 
 vi.mock('bcrypt', async () => {
   const actual = await vi.importActual<typeof import('bcrypt')>('bcrypt')
@@ -222,6 +236,62 @@ describe('Auth Controller', () => {
       })
 
       expect(next).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('RefreshToken', () => {
+    // Error cases first
+    it('should not refresh tokens if body is empty', async () => {
+      request = {
+        body: {},
+      } as Request
+
+      await AuthController.refreshToken(request, response, next)
+
+      expect(next).toHaveBeenCalledWith(
+        new AppError('UNAUTHORIZED', 'No token provided')
+      )
+    })
+
+    it('should not refresh tokens if token is blacklisted', async () => {
+      request = {
+        body: {
+          refreshToken: 'blacklisted-token',
+        },
+      } as Request
+
+      vi.mocked(isRefreshTokenBlacklistedQuery).mockResolvedValueOnce(true)
+
+      await AuthController.refreshToken(request, response, next)
+
+      expect(next).toHaveBeenCalledWith(
+        new AppError('UNAUTHORIZED', 'Token is blacklisted')
+      )
+    })
+
+    // Success cases
+    it('should refresh tokens with valid refresh token', async () => {
+      request = {
+        body: {
+          refreshToken: 'valid-refresh-token',
+        },
+      } as Request
+
+      vi.mocked(isRefreshTokenBlacklistedQuery).mockResolvedValueOnce(false)
+
+      vi.mocked(verifyRefreshToken).mockReturnValue({
+        id: 'user-id-123',
+        email: 'existinguser@example.com',
+        username: 'existinguser',
+      })
+
+      await AuthController.refreshToken(request, response, next)
+
+      expect(next).not.toHaveBeenCalled()
+      expect(response.json).toHaveBeenCalledWith({
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
+      })
     })
   })
 })

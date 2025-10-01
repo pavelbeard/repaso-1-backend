@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-// VALIDATION SCHEMAS FOR AUTH FEATURE
-/** GENERIC AUTH SCHEMAS */
+/** VALIDATION SCHEMAS FOR AUTH FEATURE */
+/** USER SCHEMAS */
 
 const userSchema = z.object({
   id: z.uuid(),
@@ -63,9 +63,39 @@ export const loginSchema = z.object({
   }),
 })
 
+/** REFRESH TOKEN */
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(10),
+  }),
+})
+
+export const refreshTokenCookieSchema = z.object({
+  cookies: z.object({
+    refreshToken: z.string().min(10),
+  }),
+})
+
+export const refreshTokenSchemaRouter = () => {
+  if (process.env.JWT_SAVE_TO_COOKIE === 'true') {
+    return refreshTokenCookieSchema
+  }
+
+  return refreshTokenSchema
+}
+
 /** EXPORT TYPES */
+/** USER TYPES */
+
 export type CreateUserInput = z.infer<typeof createUserSchema>
 export type ReadUserOutput = z.infer<typeof readUserSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type DeleteUserInput = z.infer<typeof deleteUserSchema>
 export type LoginInput = z.infer<typeof loginSchema>
+
+/** REFRESH TOKEN */
+export type RefreshTokenInput = z.infer<typeof refreshTokenSchema>
+export type RefreshTokenCookieInput = z.infer<typeof refreshTokenCookieSchema>
+export type RefreshTokenRouterInput = z.infer<
+  ReturnType<typeof refreshTokenSchemaRouter>
+>

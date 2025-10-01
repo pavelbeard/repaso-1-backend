@@ -1,12 +1,19 @@
 import bcrypt from 'bcrypt'
-import type { NextFunction, Response } from 'express'
+import type { NextFunction, Request, Response } from 'express'
 import {
+  blacklistRefreshTokenQuery,
   createUserQuery,
   findUserByIdOrUsernameOrEmailQuery,
+  isRefreshTokenBlacklistedQuery,
 } from '../../lib/db/queries/auth.queries'
 import { AppError } from '../../lib/utils/appError'
-import { UserLoginRequest, UserRegisterRequest } from './auth.types'
-import { generateTokens } from './auth.utils'
+import { JWTPayload, UserLoginRequest, UserRegisterRequest } from './auth.types'
+import {
+  generateTokens,
+  getRefreshTokenFromBody,
+  getRefreshTokenFromCookies,
+  verifyRefreshToken,
+} from './auth.utils'
 
 export class AuthController {
   static async login(req: UserLoginRequest, res: Response, next: NextFunction) {
@@ -27,7 +34,11 @@ export class AuthController {
       return next(new AppError('UNAUTHORIZED', 'Invalid credentials'))
     }
 
-    const userData = { id: user.id, email: user.email, username: user.username }
+    const userData = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    } as JWTPayload
 
     // 3. Generate JWT or session
     const [accessToken, refreshToken] = generateTokens(userData)
@@ -77,5 +88,44 @@ export class AuthController {
         email: newUser.email,
       },
     })
+  }
+
+  static async refreshToken(req: Request, res: Response, next: NextFunction) {
+    // 1. Get token from body or cookies
+    const refreshToken =
+      getRefreshTokenFromBody(req) || getRefreshTokenFromCookies(req)
+
+    if (!refreshToken) {
+      return next(new AppError('UNAUTHORIZED', 'No token provided'))
+    }
+
+    // 2. Verify token
+    const isBlacklisted = await isRefreshTokenBlacklistedQuery(refreshToken)
+
+    if (isBlacklisted) {
+      return next(new AppError('UNAUTHORIZED', 'Token is blacklisted'))
+    }
+
+    const verified = verifyRefreshToken(refreshToken)
+
+    if (!verified) {
+      return next(new AppError('UNAUTHORIZED', 'Invalid refresh token'))
+    }
+
+    // 3. Generate new access token
+    const userData = {
+      id: verified.id,
+      email: verified.email,
+      username: verified.username,
+    }
+    const [newAccessToken, newRefreshToken] = generateTokens(userData)
+
+    // 4. Blacklist old refresh token
+    await blacklistRefreshTokenQuery(refreshToken)
+
+    // 5. Send new tokens
+    res
+      .status(201)
+      .json({ accessToken: newAccessToken, refreshToken: newRefreshToken })
   }
 }

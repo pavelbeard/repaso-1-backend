@@ -3,9 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createUserSchema,
   loginSchema,
+  refreshTokenSchemaRouter,
 } from '../../../features/auth/auth.schemas'
 import { AppError } from '../appError'
-import { schemaValidationMiddleware } from './schemaValidationMiddleware'
+import { schemaValidation } from './schemaValidationMiddleware'
 
 describe('Schema Validation Middleware', () => {
   let request: Request
@@ -35,7 +36,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate empty body', async () => {
         request.body = {}
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -48,7 +49,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate missing email', async () => {
         request.body = { password: 'password123' }
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -61,7 +62,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate missing password', async () => {
         request.body = { email: 'test@example.com' }
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -74,7 +75,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate invalid email format', async () => {
         request.body = { email: 'invalid-email', password: 'Password@!123' }
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -87,7 +88,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate short password', async () => {
         request.body = { email: 'newuser@gmail.com', password: 'short' }
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -103,7 +104,7 @@ describe('Schema Validation Middleware', () => {
           password: 'normallengthpassword',
         }
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -120,7 +121,7 @@ describe('Schema Validation Middleware', () => {
           password: 'Password@!123',
         }
 
-        await schemaValidationMiddleware(loginSchema)(request, response, next)
+        await schemaValidation(loginSchema)(request, response, next)
 
         expect(next).not.toHaveBeenCalledWith(AppError)
       })
@@ -130,11 +131,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate empty body', async () => {
         request.body = {}
 
-        await schemaValidationMiddleware(createUserSchema)(
-          request,
-          response,
-          next
-        )
+        await schemaValidation(createUserSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -147,11 +144,7 @@ describe('Schema Validation Middleware', () => {
       it('should invalidate missing fields', async () => {
         request.body = { username: 'newuser', email: '' }
 
-        await schemaValidationMiddleware(createUserSchema)(
-          request,
-          response,
-          next
-        )
+        await schemaValidation(createUserSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -169,11 +162,7 @@ describe('Schema Validation Middleware', () => {
           confirmPassword: 'Password@!123',
         }
 
-        await schemaValidationMiddleware(createUserSchema)(
-          request,
-          response,
-          next
-        )
+        await schemaValidation(createUserSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -191,11 +180,7 @@ describe('Schema Validation Middleware', () => {
           confirmPassword: 'short',
         }
 
-        await schemaValidationMiddleware(createUserSchema)(
-          request,
-          response,
-          next
-        )
+        await schemaValidation(createUserSchema)(request, response, next)
 
         expect(next).toHaveBeenCalledWith(
           new AppError(
@@ -213,7 +198,28 @@ describe('Schema Validation Middleware', () => {
           confirmPassword: 'normallengthpassword',
         }
 
-        await schemaValidationMiddleware(createUserSchema)(
+        await schemaValidation(createUserSchema)(request, response, next)
+
+        expect(next).toHaveBeenCalledWith(
+          new AppError(
+            'BAD_REQUEST',
+            'Invalid or missing field provided for: password'
+          )
+        )
+      })
+    })
+
+    describe('Refresh Token Schema', () => {
+      afterEach(() => {
+        vi.resetAllMocks()
+      })
+
+      it('should invalidate empty body when JWT_SAVE_TO_COOKIE is false', async () => {
+        process.env.JWT_SAVE_TO_COOKIE = 'false'
+        vi.resetModules()
+        request.body = {}
+
+        await schemaValidation(refreshTokenSchemaRouter())(
           request,
           response,
           next
@@ -222,9 +228,61 @@ describe('Schema Validation Middleware', () => {
         expect(next).toHaveBeenCalledWith(
           new AppError(
             'BAD_REQUEST',
-            'Invalid or missing field provided for: password'
+            'Invalid or missing field provided for: refreshToken'
           )
         )
+      })
+
+      it('should validate empty body when JWT_SAVE_TO_COOKIE is true', async () => {
+        vi.resetModules()
+        request.cookies = { refreshToken: 'valid-refresh-token-12345' }
+
+        process.env.JWT_SAVE_TO_COOKIE = 'true'
+
+        await schemaValidation(refreshTokenSchemaRouter())(
+          request,
+          response,
+          next
+        )
+
+        expect(next).not.toHaveBeenCalledWith(
+          new AppError(
+            'BAD_REQUEST',
+            'Invalid or missing field provided for: refreshToken'
+          )
+        )
+      })
+
+      it('should invalidate short refresh token', async () => {
+        process.env.JWT_SAVE_TO_COOKIE = 'false'
+        vi.resetModules()
+        const { refreshTokenSchema } = await import(
+          '../../../features/auth/auth.schemas'
+        )
+        request.body = { refreshToken: 'short' }
+
+        await schemaValidation(refreshTokenSchema)(request, response, next)
+
+        expect(next).toHaveBeenCalledWith(
+          new AppError(
+            'BAD_REQUEST',
+            'Invalid or missing field provided for: refreshToken'
+          )
+        )
+      })
+
+      it('should validate correct body and return response', async () => {
+        process.env.JWT_SAVE_TO_COOKIE = 'false'
+        vi.resetModules()
+        request.body = { refreshToken: 'valid-refresh-token-12345' }
+
+        await schemaValidation(refreshTokenSchemaRouter())(
+          request,
+          response,
+          next
+        )
+
+        expect(next).not.toHaveBeenCalledWith(AppError)
       })
     })
   })

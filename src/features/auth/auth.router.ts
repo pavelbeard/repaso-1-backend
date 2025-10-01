@@ -1,18 +1,24 @@
 import { Router } from 'express'
-import { schemaValidationMiddleware } from '../../lib/utils/middlewares/schemaValidationMiddleware.ts'
+import { schemaValidation } from '../../lib/utils/middlewares/schemaValidationMiddleware.ts'
 import { AuthController } from './auth.controller.ts'
-import { createUserSchema, loginSchema } from './auth.schemas.ts'
+import {
+  createUserSchema,
+  loginSchema,
+  refreshTokenSchema,
+} from './auth.schemas.ts'
 
 export const authRouter = Router()
 
-authRouter.post(
-  '/login',
-  schemaValidationMiddleware(loginSchema),
-  AuthController.login
-)
+authRouter.post('/login', schemaValidation(loginSchema), AuthController.login)
 
 authRouter.post(
   '/register',
-  schemaValidationMiddleware(createUserSchema),
+  schemaValidation(createUserSchema),
   AuthController.register
+)
+
+authRouter.post(
+  '/refresh-token',
+  schemaValidation(refreshTokenSchema),
+  AuthController.refreshToken
 )

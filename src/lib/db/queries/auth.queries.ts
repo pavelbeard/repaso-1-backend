@@ -2,8 +2,9 @@ import {
   CreateUserInput,
   UpdateUserInput,
 } from 'src/features/auth/auth.schemas'
-import { User } from '../models/auth.models'
+import { RefreshTokenBlacklist, User } from '../models/auth.models'
 
+// CRUD operations for User model
 // CREATE
 export const createUserQuery = async (
   data: Omit<CreateUserInput['body'], 'confirmPassword'>
@@ -37,4 +38,16 @@ export const updateUserQuery = async (
 // DELETE
 export const deleteUserQuery = async (id: string) => {
   return await User.findByIdAndDelete(id)
+}
+
+// CRUD operations for RefreshTokenBlacklist model
+// CREATE
+export const blacklistRefreshTokenQuery = async (token: string) => {
+  return await RefreshTokenBlacklist.create({ token })
+}
+
+// READ
+export const isRefreshTokenBlacklistedQuery = async (token: string) => {
+  const record = await RefreshTokenBlacklist.findOne({ token })
+  return !!record
 }
