@@ -12,6 +12,7 @@ import {
   generateTokens,
   getRefreshTokenFromBody,
   getRefreshTokenFromCookies,
+  isCookieBasedAuth,
   verifyRefreshToken,
 } from './auth.utils'
 
@@ -42,6 +43,26 @@ export class AuthController {
 
     // 3. Generate JWT or session
     const [accessToken, refreshToken] = generateTokens(userData)
+
+    const isCookieAuth = isCookieBasedAuth()
+
+    if (isCookieAuth) {
+      return res
+        .status(200)
+        .cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        })
+        .cookie('accessToken', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 5 * 60 * 1000, // 5 minutes
+        })
+        .json({ user: userData })
+    }
 
     res.status(200).json({ accessToken, refreshToken, user: userData })
   }
@@ -127,5 +148,27 @@ export class AuthController {
     res
       .status(201)
       .json({ accessToken: newAccessToken, refreshToken: newRefreshToken })
+  }
+
+  static async logout(req: Request, res: Response, next: NextFunction) {
+    // 1. Get token from body or cookies
+    const refreshToken =
+      getRefreshTokenFromBody(req) || getRefreshTokenFromCookies(req)
+
+    if (!refreshToken) {
+      return next(new AppError('BAD_REQUEST', 'No token provided'))
+    }
+
+    // 2. Verify token
+    const verified = verifyRefreshToken(refreshToken)
+
+    if (!verified) {
+      return next(new AppError('UNAUTHORIZED', 'Invalid refresh token'))
+    }
+
+    // 3. Blacklist the refresh token
+    await blacklistRefreshTokenQuery(refreshToken)
+
+    res.status(200).json({ message: 'Logged out successfully' })
   }
 }

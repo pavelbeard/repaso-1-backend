@@ -1,10 +1,10 @@
 import mongoose from 'mongoose'
-import { MONGODB_URL } from '../constants.ts'
+import { config } from '../constants'
 
 // Function to connect to MongoDB and start the app as a callback
 
 export const client = ({
-  connstring = MONGODB_URL,
+  connstring = config.MONGODB_URL,
   app,
 }: {
   connstring?: string

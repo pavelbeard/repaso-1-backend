@@ -1,11 +1,13 @@
 import { Router } from 'express'
 import { schemaValidation } from '../../lib/utils/middlewares/schemaValidationMiddleware.ts'
+import { verifyToken } from '../../lib/utils/middlewares/verifyTokenMiddleware.ts'
 import { AuthController } from './auth.controller.ts'
 import {
   createUserSchema,
   loginSchema,
-  refreshTokenSchema,
+  refreshTokenSchemaRouter,
 } from './auth.schemas.ts'
+import { isCookieBasedAuth } from './auth.utils.ts'
 
 export const authRouter = Router()
 
@@ -19,6 +21,15 @@ authRouter.post(
 
 authRouter.post(
   '/refresh-token',
-  schemaValidation(refreshTokenSchema),
+  schemaValidation(refreshTokenSchemaRouter(isCookieBasedAuth())),
   AuthController.refreshToken
+)
+
+authRouter.post(
+  '/logout',
+  [
+    schemaValidation(refreshTokenSchemaRouter(isCookieBasedAuth())),
+    verifyToken,
+  ],
+  AuthController.logout
 )

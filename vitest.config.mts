@@ -34,6 +34,7 @@ export default defineConfig({
           env: { ...process.env },
           alias: {
             lib: './src/lib',
+            features: './src/features',
           },
           isolate: true,
         },

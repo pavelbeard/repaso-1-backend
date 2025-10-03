@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { verifyRefreshToken } from './auth.utils'
+import { isCookieBasedAuth, verifyRefreshToken } from './auth.utils'
 
 vi.mock('jsonwebtoken', () => {
   return {
@@ -12,6 +12,16 @@ vi.mock('jsonwebtoken', () => {
         throw new Error('Invalid token')
       }),
     },
+  }
+})
+
+vi.mock('./auth.utils', async () => {
+  const actual = await vi.importActual<typeof import('./auth.utils')>(
+    './auth.utils'
+  )
+  return {
+    ...actual,
+    isCookieBasedAuth: vi.fn(),
   }
 })
 
@@ -29,5 +39,16 @@ describe('Verify Refresh Token', () => {
   it('should return false for empty token', () => {
     const result = verifyRefreshToken('')
     expect(result).toBe(false)
+  })
+})
+
+describe('Dummy Test', () => {
+  it('should pass', () => {
+    vi.mocked(isCookieBasedAuth).mockReturnValue(true)
+
+    const v = isCookieBasedAuth()
+    expect(v).toBe(true)
+
+    expect(isCookieBasedAuth()).toBe(true)
   })
 })

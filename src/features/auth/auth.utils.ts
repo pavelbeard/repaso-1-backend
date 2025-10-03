@@ -1,11 +1,15 @@
 import type { Request } from 'express'
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET_ACCESS, JWT_SECRET_REFRESH } from '../../lib/constants'
+import { config } from '../../lib/constants'
 import { JWTPayload } from './auth.types'
 
 export const generateTokens = (data: JWTPayload) => {
-  const accessToken = jwt.sign(data, JWT_SECRET_ACCESS, { expiresIn: '15m' })
-  const refreshToken = jwt.sign(data, JWT_SECRET_REFRESH, { expiresIn: '7d' })
+  const accessToken = jwt.sign(data, config.JWT_SECRET_ACCESS, {
+    expiresIn: '15m',
+  })
+  const refreshToken = jwt.sign(data, config.JWT_SECRET_REFRESH, {
+    expiresIn: '7d',
+  })
 
   return [accessToken, refreshToken]
 }
@@ -20,8 +24,12 @@ export const getRefreshTokenFromCookies = (req: Request) => {
 
 export const verifyRefreshToken = (token: string) => {
   try {
-    return jwt.verify(token, JWT_SECRET_REFRESH) as JWTPayload
+    return jwt.verify(token, config.JWT_SECRET_REFRESH) as JWTPayload
   } catch {
     return false
   }
+}
+
+export const isCookieBasedAuth = () => {
+  return config.JWT_SAVE_TO_COOKIE
 }

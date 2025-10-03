@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET_ACCESS } from 'src/lib/constants'
+import { config } from 'src/lib/constants'
 import { AppError } from '../appError'
 
 const getTokenFromHeaders = (req: Request) => {
@@ -13,7 +13,7 @@ const getTokenFromHeaders = (req: Request) => {
 }
 
 const getTokenFromCookies = (req: Request) => {
-  return req.cookies?.token || null
+  return req.cookies?.accessToken || null
 }
 
 export const verifyToken = async (
@@ -32,7 +32,7 @@ export const verifyToken = async (
 
   // 2. Verify token
   try {
-    const verified = jwt.verify(token, JWT_SECRET_ACCESS)
+    const verified = jwt.verify(token, config.JWT_SECRET_ACCESS)
     req.session.user = verified as {
       id: string
       email: string

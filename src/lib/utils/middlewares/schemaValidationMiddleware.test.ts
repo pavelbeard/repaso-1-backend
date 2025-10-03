@@ -237,9 +237,7 @@ describe('Schema Validation Middleware', () => {
         vi.resetModules()
         request.cookies = { refreshToken: 'valid-refresh-token-12345' }
 
-        process.env.JWT_SAVE_TO_COOKIE = 'true'
-
-        await schemaValidation(refreshTokenSchemaRouter())(
+        await schemaValidation(refreshTokenSchemaRouter(true))(
           request,
           response,
           next

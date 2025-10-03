@@ -76,8 +76,8 @@ export const refreshTokenCookieSchema = z.object({
   }),
 })
 
-export const refreshTokenSchemaRouter = () => {
-  if (process.env.JWT_SAVE_TO_COOKIE === 'true') {
+export const refreshTokenSchemaRouter = (saveToCookies: boolean = false) => {
+  if (saveToCookies) {
     return refreshTokenCookieSchema
   }
 

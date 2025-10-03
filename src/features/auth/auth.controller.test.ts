@@ -227,7 +227,8 @@ describe('Auth Controller', () => {
       await AuthController.login(request, response, next)
 
       expect(response.json).toHaveBeenCalledWith({
-        token: expect.any(String),
+        accessToken: expect.any(String),
+        refreshToken: expect.any(String),
         user: {
           id: 'user-id-123',
           email: 'existinguser@example.com',
@@ -292,6 +293,53 @@ describe('Auth Controller', () => {
         accessToken: expect.any(String),
         refreshToken: expect.any(String),
       })
+    })
+  })
+
+  describe('Logout', () => {
+    it('should not logout if body is empty', async () => {
+      request = {
+        body: {},
+      } as Request
+
+      await AuthController.logout(request, response, next)
+
+      expect(next).toHaveBeenCalledWith(
+        new AppError('BAD_REQUEST', 'No token provided')
+      )
+    })
+
+    it('should not logout if token is invalid', async () => {
+      request = {
+        body: {
+          refreshToken: 'invalid-token',
+        },
+      } as Request
+
+      vi.mocked(verifyRefreshToken).mockReturnValue(false)
+
+      await AuthController.logout(request, response, next)
+
+      expect(next).toHaveBeenCalledWith(
+        new AppError('UNAUTHORIZED', 'Invalid refresh token')
+      )
+    })
+
+    it('should not logout if there is not token in cookes', async () => {
+      process.env.JWT_SAVE_TO_COOKIE = 'true'
+
+      request = {
+        cookies: {
+          refreshToken: null,
+        },
+        body: {},
+      } as unknown as Request
+
+      await AuthController.logout(request, response, next)
+
+      expect(next).toHaveBeenCalledWith(
+        new AppError('BAD_REQUEST', 'No token provided')
+      )
     })
   })
 })
